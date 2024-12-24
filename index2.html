@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Static-Hole Golf Game (with Aiming Line and Random Hole)</title>
+  <!-- Meta tags for mobile-friendly scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Mobile-Friendly Golf Game</title>
   <style>
     /* Basic reset */
     * {
@@ -22,43 +24,44 @@
       position: relative;
     }
 
+    /* Larger area to fill more of the screen */
     #gameArea {
-      width: 80vw;
-      height: 80vh;
-      border: 4px dashed #333;
+      width: 95vw;           /* fill most of the screen width */
+      height: 90vh;          /* fill most of the screen height */
+      border: 3px dashed #333;
       border-radius: 15px;
       position: relative;
       background-color: rgba(255, 255, 255, 0.4);
       overflow: hidden;
     }
 
-    /* Scoreboard (optional) */
+    /* Bigger scoreboard text */
     #scoreboard {
       position: absolute;
       top: 10px;
       left: 10px;
       color: #333;
-      font-size: 1.3rem;
+      font-size: 2rem; /* bigger for mobile */
       background: rgba(255, 255, 255, 0.85);
-      padding: 8px 12px;
+      padding: 10px 15px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
 
-    /* Golf hole (now we remove static top/right to allow random positioning) */
+    /* Larger hole */
     #hole {
-      width: 40px;
-      height: 40px;
+      width: 60px;    /* was 40px */
+      height: 60px;   /* was 40px */
       background: radial-gradient(circle at 30% 30%, #000 0%, #444 70%, #000 100%);
       border-radius: 50%;
       position: absolute;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
     }
 
-    /* Golf ball */
+    /* Larger ball */
     #ball {
-      width: 30px;
-      height: 30px;
+      width: 40px;   /* was 30px */
+      height: 40px;  /* was 30px */
       background: radial-gradient(circle at 30% 30%, #fff 0%, #ccc 80%, #eee 100%);
       border-radius: 50%;
       position: absolute;
@@ -66,16 +69,16 @@
       pointer-events: none;
     }
 
-    /* Dotted "aiming line" */
+    /* Thicker dotted "aiming line" */
     #aimLine {
       position: absolute;
-      height: 0; /* We'll use a border for the line */
-      border-top: 2px dotted red;
-      transform-origin: left center; /* Rotate around the left edge */
+      height: 0;
+      border-top: 3px dotted red; /* slightly thicker */
+      transform-origin: left center;
       pointer-events: none;
     }
 
-    /* Controls on the right side */
+    /* Controls on the right side, bigger UI */
     #controls {
       position: absolute;
       top: 10px;
@@ -88,7 +91,7 @@
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       color: #333;
-      width: 180px;
+      width: 200px; /* slightly bigger width */
     }
     .control-group {
       display: flex;
@@ -97,11 +100,18 @@
     }
     .control-group label {
       font-weight: bold;
+      font-size: 1.1rem; /* bigger label text */
+    }
+    .control-group input[type="range"] {
+      -webkit-appearance: none; /* to better style if desired */
+      height: 4px;
+      background: #ccc;
+      border-radius: 5px;
     }
 
-    /* Buttons */
+    /* Bigger buttons for tapping */
     .btn {
-      padding: 8px 15px;
+      padding: 10px 15px;
       background: #fff;
       border: 2px solid #333;
       border-radius: 5px;
@@ -110,6 +120,7 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
       transition: background 0.2s;
       text-align: center;
+      font-size: 1.1rem; /* bigger text */
     }
     .btn:hover {
       background: #f0f0f0;
@@ -125,11 +136,12 @@
       background: rgba(255,255,255,0.95);
       padding: 30px;
       border-radius: 10px;
-      font-size: 1.5rem;
+      font-size: 2rem;  /* bigger text for mobile */
       color: #333;
       text-align: center;
       box-shadow: 0 0 15px rgba(0,0,0,0.3);
       z-index: 100;
+      max-width: 90%;
     }
   </style>
 </head>
@@ -193,6 +205,8 @@
 
     // Basic ball physics
     let vx = 0, vy = 0; 
+    // Reduced the velocity factor => slower ball
+    const velocityFactor = 0.2; 
     let gravity = 0.4; 
 
     // Positions
@@ -217,9 +231,9 @@
       updateAimLine();
     };
 
-    // ----- NEW: Randomly place the hole within the gameArea -----
+    // Randomly place the hole within the gameArea
     function randomizeHolePosition() {
-      const holeSize = 40; // match #hole width/height
+      const holeSize = 60; // match #hole width/height
       const holeX = Math.random() * (gameAreaRect.width - holeSize);
       const holeY = Math.random() * (gameAreaRect.height - holeSize);
       hole.style.left = holeX + 'px';
@@ -232,8 +246,8 @@
       isShooting = false;
 
       // Place ball near bottom-left
-      ballX = 30;
-      ballY = gameAreaRect.height - 60;
+      ballX = 40;  /* move it slightly further right for bigger ball */
+      ballY = gameAreaRect.height - 80; /* a bit higher for bigger ball */
       positionBall(ballX, ballY);
     }
 
@@ -255,12 +269,13 @@
       const powerVal = parseFloat(powerSlider.value);
 
       // The length of the line is some function of power
-      const length = powerVal * 4; // e.g., power=50 => 200px line
+      // e.g., power=50 => line=200px; we might make it a bit longer for bigger ball
+      const length = powerVal * 4;
 
       // Position the line at the ball's center
       const ballRect     = ball.getBoundingClientRect();
-      const ballCenterX  = ballRect.left + 15;
-      const ballCenterY  = ballRect.top  + 15;
+      const ballCenterX  = ballRect.left + ballRect.width / 2;
+      const ballCenterY  = ballRect.top  + ballRect.height / 2;
 
       aimLine.style.left = ballCenterX + 'px';
       aimLine.style.top  = ballCenterY + 'px';
@@ -283,8 +298,8 @@
       // Hide the line while shooting
       aimLine.style.width = '0';
 
-      // Velocity
-      const velocity = powerVal * 0.4;
+      // Slower velocity factor
+      const velocity = powerVal * velocityFactor;
       vx = velocity * Math.cos(angleRad);
       vy = -velocity * Math.sin(angleRad);
 
@@ -314,8 +329,8 @@
       // Check boundaries => miss => reset
       if (
         ballX < 0 || 
-        ballX > (gameAreaRect.width - 30) ||
-        ballY > (gameAreaRect.height - 30) ||
+        ballX > (gameAreaRect.width - ball.offsetWidth) ||
+        ballY > (gameAreaRect.height - ball.offsetHeight) ||
         ballY < 0
       ) {
         // Missed shot
@@ -335,14 +350,15 @@
 
       // Ball's center
       const ballRect = ball.getBoundingClientRect();
-      const ballCenterX = ballRect.left + 15; 
-      const ballCenterY = ballRect.top + 15;
+      const ballCenterX = ballRect.left + ballRect.width / 2;
+      const ballCenterY = ballRect.top  + ballRect.height / 2;
 
       const dist = Math.sqrt(
         (ballCenterX - holeCenterX) ** 2 +
         (ballCenterY - holeCenterY) ** 2
       );
-      return (dist < 25);
+      // Larger threshold because hole & ball are bigger
+      return (dist < 35);
     }
 
     // Show final message & play music
