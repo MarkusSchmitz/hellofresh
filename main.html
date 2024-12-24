@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Food Emoji Rain</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #FF9A8B 0%, #FF6B6B 100%);
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        }
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            background: white;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .falling-emoji {
+            position: fixed;
+            font-size: 2.5rem;
+            pointer-events: none;
+            animation: fall linear forwards;
+            z-index: 1;
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(-20vh) rotate(0deg);
+            }
+            to {
+                transform: translateY(120vh) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="startButton">Start Food Rain! 🍔</button>
+    <audio id="backgroundMusic" loop>
+        <source src="song.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        const foodEmojis = [
+            '🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥨', '🥯', '🥖', '🥐',
+            '🍞', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝',
+            '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚',
+            '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧',
+            '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍪', '🌰',
+            '🥜', '🍯', '🥛', '🍼', '☕', '🍵', '🧃', '🥤', '🧋', '🍶',
+            '🍺', '🥂', '🍷', '🥃', '🍸', '🍹', '🍇', '🍈', '🍉', '🍊',
+            '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓',
+            '🫐', '🥝', '🍅', '🫒', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽',
+            '🌶️', '🫑', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰'
+        ];
+
+        let isActive = false;
+        let interval;
+
+        function spawnEmoji() {
+            const emoji = document.createElement('div');
+            emoji.className = 'falling-emoji';
+            emoji.textContent = foodEmojis[Math.floor(Math.random() * foodEmojis.length)];
+            
+            // Random horizontal position
+            emoji.style.left = Math.random() * 100 + 'vw';
+            
+            // Random fall duration between 2 and 5 seconds
+            const duration = 2 + Math.random() * 3;
+            emoji.style.animationDuration = duration + 's';
+            
+            // Random starting rotation
+            emoji.style.transform = `rotate(${Math.random() * 360}deg)`;
+            
+            document.body.appendChild(emoji);
+
+            // Remove after animation
+            setTimeout(() => {
+                emoji.remove();
+            }, duration * 1000);
+        }
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            const music = document.getElementById('backgroundMusic');
+
+            if (!isActive) {
+                isActive = true;
+                this.textContent = 'Stop Food Rain! 🛑';
+                
+                // Play the music
+                music.play();
+                
+                // Spawn more frequently - every 50ms
+                interval = setInterval(spawnEmoji, 50);
+                
+                // Initial burst of emojis
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(spawnEmoji, i * 50);
+                }
+            } else {
+                isActive = false;
+                this.textContent = 'Start Food Rain! 🍔';
+
+                // Pause the music
+                music.pause();
+                music.currentTime = 0;
+                
+                clearInterval(interval);
+                
+                // Clear existing emojis
+                document.querySelectorAll('.falling-emoji').forEach(e => e.remove());
+            }
+        });
+    </script>
+</body>
+</html>
