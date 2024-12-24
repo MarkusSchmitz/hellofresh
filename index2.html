@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <!-- Meta tags for mobile-friendly scaling -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Mobile-Friendly Golf Game</title>
+  <title>Mobile-Friendly Golf Game (with Margins)</title>
   <style>
     /* Basic reset */
     * {
@@ -213,11 +213,15 @@
     let gameAreaRect = null;
     let ballX, ballY;
 
+    // We'll use a 'margin' so neither hole nor ball can spawn too close
+    // to the top or bottom edges of #gameArea
+    const margin = 80;
+
     window.onload = () => {
       // Get bounding rect of the game area
       gameAreaRect = gameArea.getBoundingClientRect();
 
-      // 1) Randomize hole position
+      // 1) Randomize hole position (with margin)
       randomizeHolePosition();
 
       // 2) Set up the ball and aim line
@@ -231,23 +235,26 @@
       updateAimLine();
     };
 
-    // Randomly place the hole within the gameArea
+    // Randomly place the hole within the gameArea, respecting margin
     function randomizeHolePosition() {
       const holeSize = 60; // match #hole width/height
-      const holeX = Math.random() * (gameAreaRect.width - holeSize);
-      const holeY = Math.random() * (gameAreaRect.height - holeSize);
+
+      // Available space minus hole size, minus margin top & bottom
+      const holeX = margin + Math.random() * (gameAreaRect.width - holeSize - 2 * margin);
+      const holeY = margin + Math.random() * (gameAreaRect.height - holeSize - 2 * margin);
+
       hole.style.left = holeX + 'px';
       hole.style.top  = holeY + 'px';
     }
 
-    // Reset ball to bottom-left
+    // Reset ball near bottom-left, with margin from edges
     function resetPositions() {
       finalMessage.style.display = 'none';
       isShooting = false;
 
-      // Place ball near bottom-left
-      ballX = 40;  /* move it slightly further right for bigger ball */
-      ballY = gameAreaRect.height - 80; /* a bit higher for bigger ball */
+      // For bigger ball, avoid bottom/left edges by margin
+      ballX = margin; 
+      ballY = gameAreaRect.height - margin - ball.offsetHeight;
       positionBall(ballX, ballY);
     }
 
@@ -266,11 +273,10 @@
       }
 
       const angleDeg = parseFloat(angleSlider.value);
-      const powerVal = parseFloat(powerSlider.value);
+      const powerVal = parseFloat(powerSlider.value) *2;
 
       // The length of the line is some function of power
-      // e.g., power=50 => line=200px; we might make it a bit longer for bigger ball
-      const length = powerVal * 4;
+      const length = powerVal * 4; // e.g., power=50 => line=200px
 
       // Position the line at the ball's center
       const ballRect     = ball.getBoundingClientRect();
@@ -343,12 +349,10 @@
 
     // Check collision between ball & hole
     function checkCollision() {
-      // Hole's center
       const holeRect = hole.getBoundingClientRect();
       const holeCenterX = holeRect.left + holeRect.width / 2;
       const holeCenterY = holeRect.top  + holeRect.height / 2;
 
-      // Ball's center
       const ballRect = ball.getBoundingClientRect();
       const ballCenterX = ballRect.left + ballRect.width / 2;
       const ballCenterY = ballRect.top  + ballRect.height / 2;
@@ -375,7 +379,7 @@
       // Reset the game area after a small delay
       setTimeout(() => {
         resetPositions();
-      }, 10000);
+      }, 2000);
     }
   </script>
 </body>
