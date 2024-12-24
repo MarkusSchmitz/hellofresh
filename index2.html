@@ -1,204 +1,366 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Food Emoji Rain</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #0b1c2c 0%, #152642 100%);
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-            color: white;
-            text-align: center;
-            position: relative;
-        }
+  <meta charset="UTF-8" />
+  <title>Static-Hole Golf Game (with Aiming Line and Random Hole)</title>
+  <style>
+    /* Basic reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+      background: linear-gradient(135deg, #79c267 0%, #c0f5b9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
 
-        #startButton {
-            padding: 15px 30px;
-            font-size: 20px;
-            cursor: pointer;
-            background: white;
-            color: #152642;
-            border: none;
-            border-radius: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            z-index: 100;
-        }
+    #gameArea {
+      width: 80vw;
+      height: 80vh;
+      border: 4px dashed #333;
+      border-radius: 15px;
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.4);
+      overflow: hidden;
+    }
 
-        #message {
-            display: none;
-            margin-top: 20px;
-            font-size: 1.5rem;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            color: black; /* Changed to black */
-            max-width: 80%;
-            text-align: center;
-        }
+    /* Scoreboard (optional) */
+    #scoreboard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #333;
+      font-size: 1.3rem;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 8px 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
 
-        .falling-emoji {
-            position: fixed;
-            font-size: 2.5rem;
-            pointer-events: none;
-            animation: fall linear forwards;
-            z-index: 1;
-        }
+    /* Golf hole (now we remove static top/right to allow random positioning) */
+    #hole {
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle at 30% 30%, #000 0%, #444 70%, #000 100%);
+      border-radius: 50%;
+      position: absolute;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+    }
 
-        @keyframes fall {
-            from {
-                transform: translateY(-20vh) rotate(0deg);
-            }
-            to {
-                transform: translateY(120vh) rotate(360deg);
-            }
-        }
+    /* Golf ball */
+    #ball {
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle at 30% 30%, #fff 0%, #ccc 80%, #eee 100%);
+      border-radius: 50%;
+      position: absolute;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
 
-        /* Starry background */
-        .stars {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
-        }
+    /* Dotted "aiming line" */
+    #aimLine {
+      position: absolute;
+      height: 0; /* We'll use a border for the line */
+      border-top: 2px dotted red;
+      transform-origin: left center; /* Rotate around the left edge */
+      pointer-events: none;
+    }
 
-        .star {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: white;
-            border-radius: 50%;
-            opacity: 0;
-            animation: twinkle 4s infinite ease-in-out;
-        }
+    /* Controls on the right side */
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      color: #333;
+      width: 180px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .control-group label {
+      font-weight: bold;
+    }
 
-        @keyframes twinkle {
-            0%, 100% {
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-        }
-    </style>
+    /* Buttons */
+    .btn {
+      padding: 8px 15px;
+      background: #fff;
+      border: 2px solid #333;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      transition: background 0.2s;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #f0f0f0;
+    }
+
+    /* Celebration / Final Message */
+    #finalMessage {
+      display: none;
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.95);
+      padding: 30px;
+      border-radius: 10px;
+      font-size: 1.5rem;
+      color: #333;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      z-index: 100;
+    }
+  </style>
 </head>
 <body>
-    <div class="stars" id="stars"></div>
-    <button id="startButton">Klicke hier für eine Überraschung! 🎁</button>
-    <div id="message">
-        <p>🎄 Frohe Weihnachten, Mama und Papa! 🎄</p>
-        <p>Um euch die nach-weihnachtliche Zeit etwas zu "versüßen" möchten wir euch ein kleines kulinarisches Geschenk überreichen.</p>
-        <p>Nämlich ein kulinarisches Experiment mit HelloFrsch.</p>
-        <p>Wir hoffen, Ihr genießt die aufregenden Mahlzeiten. Guten Appetit und eine wundervolle Weihnachtszeit! 🎅✨</p>
+  <div id="gameArea">
+    <div id="scoreboard">Score: <span id="score">0</span></div>
+
+    <!-- Randomized hole position -->
+    <div id="hole"></div>
+    <!-- Ball -->
+    <div id="ball"></div>
+    <!-- Aiming line -->
+    <div id="aimLine"></div>
+
+    <!-- Final message that appears on hole-in-one or skip -->
+    <div id="finalMessage">
+      <p><strong>HOLE IN ONE!</strong></p>
+      <p>⛳️ Hallo Papa! ⛳️</p>
+        <p>Wir freuen uns schon auf den Golf-Sommer mit dir!</p>
+        <p>Mach dich bereit für Bälle im Bunker, lange Drives & ganz viel Sonne! ☀️</p>
+        <p>Danke für alles, wir können es kaum erwarten! 🏌️‍♂️</p>    </div>
+
+    <!-- Controls on the right -->
+    <div id="controls">
+      <div class="control-group">
+        <label for="angleSlider">Angle (0° - 90°):</label>
+        <input type="range" id="angleSlider" min="0" max="90" value="45" />
+      </div>
+      <div class="control-group">
+        <label for="powerSlider">Power (1 - 100):</label>
+        <input type="range" id="powerSlider" min="1" max="100" value="50" />
+      </div>
+      <button class="btn" id="shootBtn">SWING!</button>
+      <button class="btn" id="skipBtn">SKIP</button>
     </div>
-    <audio id="backgroundMusic" loop>
-        <source src="song.mp3" type="audio/mp3">
-        Dein Browser unterstützt dieses Audioelement nicht.
-    </audio>
+  </div>
 
-    <script>
-        const foodEmojis = [
-            '🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥨', '🥯', '🥖', '🥐',
-            '🍞', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝',
-            '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚',
-            '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧',
-            '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍪', '🌰',
-            '🥜', '🍯', '🥛', '🍼', '☕', '🍵', '🧃', '🥤', '🧋', '🍶',
-            '🍺', '🥂', '🍷', '🥃', '🍸', '🍹', '🍇', '🍈', '🍉', '🍊',
-            '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓',
-            '🫐', '🥝', '🍅', '🫒', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽',
-            '🌶️', '🫑', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰'
-        ];
+  <!-- Background music (plays after hole-in-one or skip) -->
+  <audio id="bgMusic" loop>
+    <source src="golf_song.mp3" type="audio/mp3" />
+    Dein Browser unterstützt dieses Audioelement nicht.
+  </audio>
 
-        let isActive = false;
-        let interval;
+  <script>
+    // Grabbing elements
+    const gameArea    = document.getElementById('gameArea');
+    const hole        = document.getElementById('hole');
+    const ball        = document.getElementById('ball');
+    const aimLine     = document.getElementById('aimLine');
+    const angleSlider = document.getElementById('angleSlider');
+    const powerSlider = document.getElementById('powerSlider');
+    const shootBtn    = document.getElementById('shootBtn');
+    const skipBtn     = document.getElementById('skipBtn');
+    const finalMessage= document.getElementById('finalMessage');
+    const scoreDisplay= document.getElementById('score');
+    const bgMusic     = document.getElementById('bgMusic');
 
-        function spawnEmoji() {
-            const emoji = document.createElement('div');
-            emoji.className = 'falling-emoji';
-            emoji.textContent = foodEmojis[Math.floor(Math.random() * foodEmojis.length)];
-            
-            // Random horizontal position
-            emoji.style.left = Math.random() * 100 + 'vw';
-            
-            // Random fall duration between 2 and 5 seconds
-            const duration = 2 + Math.random() * 3;
-            emoji.style.animationDuration = duration + 's';
-            
-            // Random starting rotation
-            emoji.style.transform = `rotate(${Math.random() * 360}deg)`;
-            
-            document.body.appendChild(emoji);
+    let score       = 0;
+    let isShooting  = false;
+    let animationId = null;
 
-            // Remove after animation
-            setTimeout(() => {
-                emoji.remove();
-            }, duration * 1000);
-        }
+    // Basic ball physics
+    let vx = 0, vy = 0; 
+    let gravity = 0.4; 
 
-        function createStars() {
-            const starsContainer = document.getElementById('stars');
-            for (let i = 0; i < 100; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.left = Math.random() * 100 + '%';
-                star.style.animationDelay = Math.random() * 4 + 's';
-                starsContainer.appendChild(star);
-            }
-        }
+    // Positions
+    let gameAreaRect = null;
+    let ballX, ballY;
 
-        document.getElementById('startButton').addEventListener('click', function() {
-            const music = document.getElementById('backgroundMusic');
-            const message = document.getElementById('message');
+    window.onload = () => {
+      // Get bounding rect of the game area
+      gameAreaRect = gameArea.getBoundingClientRect();
 
-            if (!isActive) {
-                isActive = true;
-                this.textContent = 'Stoppe den Spaß! 🛑';
-                
-                // Play the music
-                music.play();
+      // 1) Randomize hole position
+      randomizeHolePosition();
 
-                // Show the message
-                message.style.display = 'block';
-                
-                // Spawn more frequently - every 50ms
-                interval = setInterval(spawnEmoji, 50);
-                
-                // Initial burst of emojis
-                for (let i = 0; i < 20; i++) {
-                    setTimeout(spawnEmoji, i * 50);
-                }
-            } else {
-                isActive = false;
-                this.textContent = 'Klicke hier für eine Überraschung! 🎁';
+      // 2) Set up the ball and aim line
+      resetPositions();
 
-                // Pause the music
-                music.pause();
-                music.currentTime = 0;
+      // Update the aiming line whenever the sliders move
+      angleSlider.addEventListener('input', updateAimLine);
+      powerSlider.addEventListener('input', updateAimLine);
 
-                // Hide the message
-                message.style.display = 'none';
-                
-                clearInterval(interval);
-                
-                // Clear existing emojis
-                document.querySelectorAll('.falling-emoji').forEach(e => e.remove());
-            }
-        });
+      // Set the initial aim line on page load
+      updateAimLine();
+    };
 
-        // Initialize stars
-        createStars();
-    </script>
+    // ----- NEW: Randomly place the hole within the gameArea -----
+    function randomizeHolePosition() {
+      const holeSize = 40; // match #hole width/height
+      const holeX = Math.random() * (gameAreaRect.width - holeSize);
+      const holeY = Math.random() * (gameAreaRect.height - holeSize);
+      hole.style.left = holeX + 'px';
+      hole.style.top  = holeY + 'px';
+    }
+
+    // Reset ball to bottom-left
+    function resetPositions() {
+      finalMessage.style.display = 'none';
+      isShooting = false;
+
+      // Place ball near bottom-left
+      ballX = 30;
+      ballY = gameAreaRect.height - 60;
+      positionBall(ballX, ballY);
+    }
+
+    // Utility to place the ball
+    function positionBall(x, y) {
+      ball.style.left = x + 'px';
+      ball.style.top  = y + 'px';
+    }
+
+    // Update the "aimLine" based on current angle/power
+    function updateAimLine() {
+      if (isShooting) {
+        // If the ball is already moving, hide the line
+        aimLine.style.width = '0';
+        return;
+      }
+
+      const angleDeg = parseFloat(angleSlider.value);
+      const powerVal = parseFloat(powerSlider.value);
+
+      // The length of the line is some function of power
+      const length = powerVal * 4; // e.g., power=50 => 200px line
+
+      // Position the line at the ball's center
+      const ballRect     = ball.getBoundingClientRect();
+      const ballCenterX  = ballRect.left + 15;
+      const ballCenterY  = ballRect.top  + 15;
+
+      aimLine.style.left = ballCenterX + 'px';
+      aimLine.style.top  = ballCenterY + 'px';
+
+      // Our coordinate system: 0 deg is to the right, so we rotate negatively
+      aimLine.style.transform = `rotate(${-angleDeg}deg)`;
+      aimLine.style.width = length + 'px';
+    }
+
+    // Listen for "SWING!" click
+    shootBtn.addEventListener('click', () => {
+      if (isShooting) return;
+      isShooting = true;
+
+      // Get angle & power
+      const angleDeg  = parseFloat(angleSlider.value);
+      const angleRad  = angleDeg * (Math.PI / 180);
+      const powerVal  = parseFloat(powerSlider.value);
+
+      // Hide the line while shooting
+      aimLine.style.width = '0';
+
+      // Velocity
+      const velocity = powerVal * 0.4;
+      vx = velocity * Math.cos(angleRad);
+      vy = -velocity * Math.sin(angleRad);
+
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(update);
+    });
+
+    // "SKIP" triggers the final message & music
+    skipBtn.addEventListener('click', showFinal);
+
+    // Update the ball position with basic physics
+    function update() {
+      vy += gravity;
+      ballX += vx;
+      ballY += vy;
+
+      positionBall(ballX, ballY);
+
+      // Check collision
+      if (checkCollision()) {
+        score++;
+        scoreDisplay.textContent = score;
+        showFinal(); 
+        return;
+      }
+
+      // Check boundaries => miss => reset
+      if (
+        ballX < 0 || 
+        ballX > (gameAreaRect.width - 30) ||
+        ballY > (gameAreaRect.height - 30) ||
+        ballY < 0
+      ) {
+        // Missed shot
+        setTimeout(resetPositions, 1000);
+        return;
+      }
+
+      animationId = requestAnimationFrame(update);
+    }
+
+    // Check collision between ball & hole
+    function checkCollision() {
+      // Hole's center
+      const holeRect = hole.getBoundingClientRect();
+      const holeCenterX = holeRect.left + holeRect.width / 2;
+      const holeCenterY = holeRect.top  + holeRect.height / 2;
+
+      // Ball's center
+      const ballRect = ball.getBoundingClientRect();
+      const ballCenterX = ballRect.left + 15; 
+      const ballCenterY = ballRect.top + 15;
+
+      const dist = Math.sqrt(
+        (ballCenterX - holeCenterX) ** 2 +
+        (ballCenterY - holeCenterY) ** 2
+      );
+      return (dist < 25);
+    }
+
+    // Show final message & play music
+    function showFinal() {
+      // Show message
+      finalMessage.style.display = 'block';
+
+      // Play music
+      if (bgMusic.paused) {
+        bgMusic.currentTime = 0;
+        bgMusic.play();
+      }
+
+      // Reset the game area after a small delay
+      setTimeout(() => {
+        resetPositions();
+      }, 10000);
+    }
+  </script>
 </body>
 </html>
